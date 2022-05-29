@@ -37,7 +37,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   PrinterBluetoothManager printerManager = PrinterBluetoothManager();
-  List<PrinterBluetooth> _devices = [];
+  List<BluetoothDevice> _devices = [];
 
   @override
   void initState() {
