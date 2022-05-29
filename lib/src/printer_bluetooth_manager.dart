@@ -14,14 +14,14 @@ import 'package:flutter_bluetooth_basic/flutter_bluetooth_basic.dart';
 import './enums.dart';
 
 /// Bluetooth printer
-class PrinterBluetooth {
-  PrinterBluetooth(this._device);
-  final BluetoothDevice _device;
+// class PrinterBluetooth {
+//   PrinterBluetooth(this._device);
+//   final BluetoothDevice _device;
 
-  String? get name => _device.name;
-  String? get address => _device.address;
-  int? get type => _device.type;
-}
+//   String? get name => _device.name;
+//   String? get address => _device.address;
+//   int? get type => _device.type;
+// }
 
 /// Printer Bluetooth Manager
 class PrinterBluetoothManager {
@@ -30,26 +30,26 @@ class PrinterBluetoothManager {
   bool _isConnected = false;
   StreamSubscription? _scanResultsSubscription;
   StreamSubscription? _isScanningSubscription;
-  PrinterBluetooth? _selectedPrinter;
+  BluetoothDevice? _selectedPrinter;
 
   final BehaviorSubject<bool> _isScanning = BehaviorSubject.seeded(false);
   Stream<bool> get isScanningStream => _isScanning.stream;
 
-  final BehaviorSubject<List<PrinterBluetooth>> _scanResults =
+  final BehaviorSubject<List<BluetoothDevice>> _scanResults =
       BehaviorSubject.seeded([]);
-  Stream<List<PrinterBluetooth>> get scanResults => _scanResults.stream;
+  Stream<List<BluetoothDevice>> get scanResults => _scanResults.stream;
 
   Future _runDelayed(int seconds) {
     return Future<dynamic>.delayed(Duration(seconds: seconds));
   }
 
   void startScan(Duration timeout) async {
-    _scanResults.add(<PrinterBluetooth>[]);
+    _scanResults.add(<BluetoothDevice>[]);
 
     _bluetoothManager.startScan(timeout: timeout);
 
     _scanResultsSubscription = _bluetoothManager.scanResults.listen((devices) {
-      _scanResults.add(devices.map((d) => PrinterBluetooth(d)).toList());
+      _scanResults.add(devices.map((d) => d).toList());
     });
 
     _isScanningSubscription =
@@ -67,7 +67,7 @@ class PrinterBluetoothManager {
     await _bluetoothManager.stopScan();
   }
 
-  void selectPrinter(PrinterBluetooth printer) {
+  void selectPrinter(BluetoothDevice printer) {
     _selectedPrinter = printer;
   }
 
@@ -94,7 +94,7 @@ class PrinterBluetoothManager {
     await _bluetoothManager.stopScan();
 
     // Connect
-    await _bluetoothManager.connect(_selectedPrinter!._device);
+    await _bluetoothManager.connect(_selectedPrinter!);
 
     // Subscribe to the events
     _bluetoothManager.state.listen((state) async {
