@@ -8,9 +8,10 @@
 
 import 'dart:async';
 import 'dart:io';
-import 'package:flutter_scan_bluetooth/flutter_scan_bluetooth.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+// import 'package:flutter_scan_bluetooth/flutter_scan_bluetooth.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:flutter_bluetooth_basic/flutter_bluetooth_basic.dart';
+// import 'package:flutter_bluetooth_basic/flutter_bluetooth_basic.dart';
 import './enums.dart';
 
 /// Bluetooth printer
@@ -25,7 +26,7 @@ import './enums.dart';
 
 /// Printer Bluetooth Manager
 class PrinterBluetoothManager {
-  final BluetoothManager _bluetoothManager = BluetoothManager.instance;
+  // final FlutterBluePlus _bluetoothManager = FlutterBluePlus;
   bool _isPrinting = false;
   bool _isConnected = false;
   StreamSubscription? _scanResultsSubscription;
@@ -35,25 +36,25 @@ class PrinterBluetoothManager {
   final BehaviorSubject<bool> _isScanning = BehaviorSubject.seeded(false);
   Stream<bool> get isScanningStream => _isScanning.stream;
 
-  final BehaviorSubject<List<BluetoothDevice>> _scanResults =
+  final BehaviorSubject<List<ScanResult>> _scanResults =
       BehaviorSubject.seeded([]);
-  Stream<List<BluetoothDevice>> get scanResults => _scanResults.stream;
+  Stream<List<ScanResult>> get scanResults => _scanResults.stream;
 
   Future _runDelayed(int seconds) {
     return Future<dynamic>.delayed(Duration(seconds: seconds));
   }
 
   void startScan(Duration timeout) async {
-    _scanResults.add(<BluetoothDevice>[]);
+    _scanResults.add(<ScanResult>[]);
 
-    _bluetoothManager.startScan(timeout: timeout);
+    FlutterBluePlus.startScan(timeout: timeout);
 
-    _scanResultsSubscription = _bluetoothManager.scanResults.listen((devices) {
+    _scanResultsSubscription = FlutterBluePlus.scanResults.listen((devices) {
       _scanResults.add(devices.map((d) => d).toList());
     });
 
     _isScanningSubscription =
-        _bluetoothManager.isScanning.listen((isScanningCurrent) async {
+        FlutterBluePlus.isScanning.listen((isScanningCurrent) async {
       // If isScanning value changed (scan just stopped)
       if (_isScanning.value! && !isScanningCurrent) {
         _scanResultsSubscription!.cancel();
@@ -64,7 +65,7 @@ class PrinterBluetoothManager {
   }
 
   void stopScan() async {
-    await _bluetoothManager.stopScan();
+    await FlutterBluePlus.stopScan();
   }
 
   void selectPrinter(BluetoothDevice printer) {
@@ -90,16 +91,19 @@ class PrinterBluetoothManager {
     _isPrinting = true;
 
     // We have to rescan before connecting, otherwise we can connect only once
-    await _bluetoothManager.startScan(timeout: Duration(seconds: 1));
-    await _bluetoothManager.stopScan();
+    await FlutterBluePlus.startScan(timeout: Duration(seconds: 1));
+    await FlutterBluePlus.stopScan();
 
     // Connect
-    await _bluetoothManager.connect(_selectedPrinter!);
+    await _selectedPrinter!.connect();
+    final services = await _selectedPrinter?.discoverServices();
+
+    // await FlutterBluePlus.connect(_selectedPrinter!);
 
     // Subscribe to the events
-    _bluetoothManager.state.listen((state) async {
+    FlutterBluePlus.adapterState.listen((state) async {
       switch (state) {
-        case BluetoothManager.CONNECTED:
+        case BluetoothAdapterState.on:
           // To avoid double call
           if (!_isConnected) {
             final len = bytes.length;
@@ -110,7 +114,17 @@ class PrinterBluetoothManager {
             }
 
             for (var i = 0; i < chunks.length; i += 1) {
-              await _bluetoothManager.writeData(chunks[i]);
+              services?.forEach((service) async {
+                // do something with service
+                var characteristics = service.characteristics;
+                for (BluetoothCharacteristic c in characteristics) {
+                  if (c.properties.read) {
+                    await c.write(chunks[i]);
+                    // print(value);
+                  }
+                }
+              });
+              // await _bluetoothManager.writeData();
               sleep(Duration(milliseconds: queueSleepTimeMs));
             }
 
@@ -118,12 +132,12 @@ class PrinterBluetoothManager {
           }
           // TODO sending disconnect signal should be event-based
           _runDelayed(3).then((dynamic v) async {
-            await _bluetoothManager.disconnect();
+            _selectedPrinter!.disconnect();
             _isPrinting = false;
           });
           _isConnected = true;
           break;
-        case BluetoothManager.DISCONNECTED:
+        case BluetoothAdapterState.off:
           _isConnected = false;
           break;
         default:
