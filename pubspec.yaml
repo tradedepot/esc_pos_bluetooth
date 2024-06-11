@@ -10,9 +10,11 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  rxdart: ^0.26.0
+  rxdart: ^0.27.7
   esc_pos_utils: ^1.1.0
-  flutter_blue_plus: ^1.32.7
+  flutter_bluetooth_basic:
+    git:
+      url: https://github.com/AbiMulLyA/flutter_bluetooth_basic.git
 
 dev_dependencies:
   flutter_test:
