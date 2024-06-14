@@ -17,12 +17,12 @@ dependencies:
       url: https://github.com/tradedepot/flutter_bluetooth_basic.git
   flutter_scan_bluetooth:
     git:
-      url: https://github.com/tradedepot/flutter_scan_bluetooth.git
+      url: https://github.com/Dartmind-OpenSource/flutter_scan_bluetooth.git
 
 dependency_overrides: 
   flutter_scan_bluetooth:
     git:
-      url: https://github.com/tradedepot/flutter_scan_bluetooth.git
+      url: https://github.com/Dartmind-OpenSource/flutter_scan_bluetooth.git
 dev_dependencies:
   flutter_test:
     sdk: flutter
